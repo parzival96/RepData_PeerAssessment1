@@ -1,0 +1,59 @@
+---
+title: "Untitled"
+author: "Sri Vamsi"
+date: "6/26/2020"
+output: html_document
+---
+
+# Downloading the data
+
+```{r}
+setwd("C:/Users/HEMANT/Documents/GIT/RepData_PeerAssessment1")
+list.files()
+activity <- read.csv("activity.csv")
+head(activity)
+activity_final <- na.omit(activity)
+head(activity_final)
+```
+## Mean steps taken per day
+```{r}
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+activity_date <- activity_final %>% group_by(date) %>% summarise(totalsteps = sum(steps))
+mean_steps <- mean(activity_date$totalsteps)
+median_steps <- median(activity_date$totalsteps)
+hist(activity_date$totalsteps,xlab = "Total steps",ylab = "Days",main = "Total steps per day",breaks = 20)
+```
+### Daily activity
+```{r}
+library(ggplot2)
+library(dplyr)
+databyinterval <-activity %>% select(interval, steps) %>% na.omit() %>% group_by(interval) %>% summarize(tsteps= mean(steps)) 
+ggplot(databyinterval,aes(x=interval,y=tsteps))+geom_line()
+```
+#### Frequency of steps 
+```{r}
+library(dplyr)
+library(ggplot2)
+missing_val <- nrow(activity_NA)
+activity_NA <- activity[which(is.na(activity$steps)),]
+activity_NA$steps <- ifelse(activity_NA$interval == databyinterval$interval , databyinterval$tsteps)
+activity_noNA <- rbind( activity_NA , activity_final)
+View(activity_noNA)
+Daily_steps <- activity_noNA %>% group_by(activity_noNA$date) %>% summarise(daily_steps = sum(steps))
+qplot(daily_steps , data = Daily_steps , xlab = "Total steps per day" , ylab = "Frequency" )
+```
+##### Difference in activity patterns between weekdays and weekends
+```{r}
+activity_noNA$date <- as.Date(activity_noNA$date)
+weekday <- weekdays(activity_noNA$date)
+activity_noNA$weekday <- weekdays(activity_noNA$date)
+View(activity_noNA)
+activity_noNA$weekend <- ifelse(activity_noNA$weekday == "Saturday" | activity_noNA$weekday == "Sunday","Weekend","Weekday")
+View(activity_noNA)
+library(ggplot2)
+y <- aggregate(activity_noNA$steps , by = list(activity_noNA$weekend , activity_noNA$interval) , na.omit(mean))
+names(y) <- c("Weekend" , "Interval" , "Steps")
+ggplot(data = y , aes(x = Interval , y = Steps)) + geom_line() + facet_grid(Weekend ~ .)
+```
